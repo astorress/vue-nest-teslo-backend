@@ -1,21 +1,34 @@
-import './assets/main.css';
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe, Logger } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-import { createApp } from 'vue';
-import { createPinia } from 'pinia';
-import { VueQueryPlugin } from '@tanstack/vue-query';
+import { AppModule } from './app.module';
 
-import Toast from 'vue-toastification';
-import 'vue-toastification/dist/index.css';
-import './config/yup';
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap');
 
-import App from './App.vue';
-import router from './router';
+  app.setGlobalPrefix('api');
 
-const app = createApp(App);
+  app.enableCors();
 
-app.use(createPinia());
-app.use(router);
-app.use(VueQueryPlugin);
-app.use(Toast);
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    })
+  );
 
-app.mount('#app');
+  const config = new DocumentBuilder()
+    .setTitle('Teslo RESTFul API')
+    .setDescription('Teslo shop endpoints')
+    .setVersion('1.0')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
+
+
+  await app.listen(process.env.PORT);
+  logger.log(`App running on port ${ process.env.PORT }`);
+}
+bootstrap();
